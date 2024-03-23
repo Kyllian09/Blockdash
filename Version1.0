@@ -1,0 +1,97 @@
+import pygame
+import random
+
+# Initialize Pygame
+pygame.init()
+
+# Constants for the game
+SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
+PLAYER_SIZE = 50
+OBSTACLE_WIDTH, OBSTACLE_HEIGHT = 70, 50
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+GRAVITY = 0.5
+JUMP_HEIGHT = -10
+
+# Set up the display
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption('Jumping Adventure')
+
+# Player class
+class Player(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.surf = pygame.Surface((PLAYER_SIZE, PLAYER_SIZE))
+        self.surf.fill(BLACK)
+        self.rect = self.surf.get_rect(center=(100, SCREEN_HEIGHT - PLAYER_SIZE))
+        self.velocity = 0
+        self.on_ground = True
+
+    def jump(self):
+        if self.on_ground:
+            self.velocity = JUMP_HEIGHT
+            self.on_ground = False
+
+    def update(self):
+        self.velocity += GRAVITY
+        self.rect.move_ip(0, self.velocity)
+
+        if self.rect.bottom >= SCREEN_HEIGHT:
+            self.rect.bottom = SCREEN_HEIGHT
+            self.on_ground = True
+            self.velocity = 0
+
+# Obstacle class
+class Obstacle(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.surf = pygame.Surface((OBSTACLE_WIDTH, OBSTACLE_HEIGHT))
+        self.surf.fill(BLACK)
+        self.rect = self.surf.get_rect(center=(SCREEN_WIDTH + OBSTACLE_WIDTH, SCREEN_HEIGHT - OBSTACLE_HEIGHT))
+
+    def update(self):
+        self.rect.move_ip(-5, 0)
+        if self.rect.right < 0:
+            self.kill()
+
+# Create sprite groups
+player = Player()
+player_group = pygame.sprite.Group()
+player_group.add(player)
+
+obstacles = pygame.sprite.Group()
+
+# Game loop
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                player.jump()
+
+    # Update
+    player_group.update()
+    obstacles.update()
+
+    # Add a new obstacle
+    if random.randint(1, 100) == 1:
+        new_obstacle = Obstacle()
+        obstacles.add(new_obstacle)
+
+    # Check for collisions
+    if pygame.sprite.spritecollideany(player, obstacles):
+        running = False
+
+    # Draw everything
+    screen.fill(WHITE)
+    for entity in player_group:
+        screen.blit(entity.surf, entity.rect)
+    for obstacle in obstacles:
+        screen.blit(obstacle.surf, obstacle.rect)
+
+    pygame.display.flip()
+    pygame.time.Clock().tick(30)
+
+pygame.quit()
